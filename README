@@ -1,0 +1,47 @@
+The goal is to create a python package/module which can be used to crate unique atom indexing on any molecule.
+Identical molecules will have the same indexing.
+
+
+Steps:
+1. Implement for molecules given as graphs (mol/sdf)
+    - create a graph from molecule file
+    - implement morgan algo
+        - uses the Molecule class
+        - returns a canonical labeling
+    - think up rule set for ambiguities
+
+2. Implement for molecules given as xyz files
+
+
+3. Make proper python package
+
+Structure:
+    main: read and write molecule files, apply indexing
+    morgan: morgan algorithm implementation, create unique indexing
+
+    main class:
+        Functions:
+        - sdf files
+        reads and write sdf files
+        create molecule instances
+        call morgan algo
+        print mapping sdf/text file
+
+        - xyz files:
+        implement for non graph representation
+        ???
+
+
+    Molecule class:
+        Attributes:
+        - name, string, molecule name
+        - origial_molecule_object, rdkit object, the original mol object to creat the graph from
+        - graph, networkx graph object, the (empty) molecule graph
+            nodes represent atoms, Nodes contain atom object, ev label, unique atom index and a original atom index,
+        - mapping, array, atom mapping array, atom with original id i maps to mapping[i]
+
+        Functions:
+        - create_graph(): create a undirected graph representing the molecule
+        - run_morgan(): label atoms in a canonical manner via morgan algo, write id mapping to mapping attribute
+        - draw(): draw and show the graph with plt
+
