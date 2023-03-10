@@ -11,15 +11,15 @@ def main():
 
     input = '../brom_bb_360_mp2.sdf'
     molecules = []
-    with Chem.SDMolSupplier(input) as supply:
+    with Chem.SDMolSupplier(input, sanitize = False, removeHs=False) as supply:
         molecules = [mol for mol in supply]
     test = morgan.Molecule('test',molecules[1])
+    print(list(molecules[1].GetPropNames()))
     test.create_graph()
     print(test.graph)
     test.morgan()
     test.draw_graph('unique_index')
-    #test.draw()
-    #test.draw('EC')
+    #test.draw_graph()
 
 
 
