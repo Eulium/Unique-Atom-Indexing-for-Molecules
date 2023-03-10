@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 from rdkit import Chem
+from functools import cmp_to_key
 
 
 class Molecule:
@@ -19,6 +20,32 @@ class Molecule:
                                 'bond_type':    (lambda x, y: self.graph.edges[x,y]['bond_type'],
                                                             ['SINGLE', 'DOUBLE', 'TRIPLE', 'QUADRUPLE', 'QUINTUPLE', 'HEXTUPLE', 'AROMATIC', 'IONIC']),
                                 }
+
+    def amb_rules(self):
+        Nodes = self.graph.nodes
+        Edges = self.graph.edges
+        def elm_type(**kwargs):
+            # node1 = x, node2 = y, V = current_node
+            ord = ['H', 'B', 'C', 'O', 'N', 'S', 'Cl']
+            a = Nodes[kwargs['node1']]['atom_object'].GetSymbol()
+            b = Nodes[kwargs['node2']]['atom_object'].GetSymbol()
+            if not a in ord:
+                a = len(ord)
+            else:
+                a = ord.index(a)
+            if not b in ord:
+                b = len(ord)
+            else:
+                b = ord.index(b)
+            if  a < b:
+                return -1
+            elif a > b:
+                return 1
+            else:
+                return 0
+        rules_dict = {'element_type': elm_type}
+        return rules_dict
+
 
     def draw_graph(self, label_key = False):
         '''
@@ -101,38 +128,19 @@ class Molecule:
         # stable sort by given rules
         # stable sort by distance
         # return list
-        def attribute(func, ordering, x, y):
-            '''
-            Calulate the rank of an attribute by given function
-            :param func: lambda, attribute function
-            :param ordering: list, ordering of possible results
-            :param x: int, neighbor node
-            :param y: int, current node
-            :return: int, rank of attribute
-            '''
-            att = func(x, y)
-            if att in ordering:
-                return ordering.index(att)
-            else:
-                return len(ordering)
-        def attribute_list(rules, x, y):
-            '''
-            Calculates all attribute rankes, definde by the set of rules
-            :param rules: dic, dictionary of rules
-            :param x: int, neighbor node number
-            :param y: int, current node number
-            :return: dict, attribute and rank key pairs
-            '''
-            EC = [('node',x), ('EC',self.graph.nodes[x]['EC'])]
-            att_list = [(k, attribute(v[0], v[1], x, y)) for k, v in rules.items()]
-            EC.extend(att_list)
-            EC = dict(EC)
-            return EC
+        rules = list(self.amb_rules().values())
+        G = self.graph.nodes
 
-        order = [attribute_list(self.ambiguity_rules, neighbor, current_node) for neighbor in neighbors]
-        order.sort(key= lambda x: list(x.values())[1:], reverse=True)
-        order = [x['node'] for x in order]
-        return order
+        # sort neighbors by last rule first
+        for rule in rules[::-1]:
+            def rule_wrapper(x, y):
+                # wrapper to pars current_node argument  into cmp_to_key function
+                return rule(node1=x, node2=y, V=current_node)
+            neighbors.sort(key = cmp_to_key(rule_wrapper), reverse=True)
+
+        # ensure sorting by EC lable
+        neighbors.sort(key=lambda x: G[x]['EC'], reverse=True)
+        return neighbors
 
 
     def subgraph_morgan(self, subset, C_start=0):

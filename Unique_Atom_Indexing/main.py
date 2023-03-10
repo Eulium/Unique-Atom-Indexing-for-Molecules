@@ -14,7 +14,6 @@ def main():
     with Chem.SDMolSupplier(input, sanitize = False, removeHs=False) as supply:
         molecules = [mol for mol in supply]
     test = morgan.Molecule('test',molecules[1])
-    print(list(molecules[1].GetPropNames()))
     test.create_graph()
     print(test.graph)
     test.morgan()
