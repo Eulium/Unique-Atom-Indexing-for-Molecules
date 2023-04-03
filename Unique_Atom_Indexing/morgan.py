@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import rule_set
 import matplotlib.pyplot as plt
 from rdkit import Chem
 from functools import cmp_to_key
@@ -16,36 +17,7 @@ class Molecule:
         self.graph = nx.Graph()
         self.name = mol_name
         self.mapping = [0]*len(molecule_object.GetAtoms())
-        self.ambiguity_rules = {'element_type': (lambda x, y: self.graph.nodes[x]['atom_object'].GetSymbol(),['H', 'B', 'C', 'O', 'N', 'S', 'Cl']),
-                                'bond_type':    (lambda x, y: self.graph.edges[x,y]['bond_type'],
-                                                            ['SINGLE', 'DOUBLE', 'TRIPLE', 'QUADRUPLE', 'QUINTUPLE', 'HEXTUPLE', 'AROMATIC', 'IONIC']),
-                                }
-
-    def amb_rules(self):
-        Nodes = self.graph.nodes
-        Edges = self.graph.edges
-        def elm_type(**kwargs):
-            # node1 = x, node2 = y, V = current_node
-            ord = ['H', 'B', 'C', 'O', 'N', 'S', 'Cl']
-            a = Nodes[kwargs['node1']]['atom_object'].GetSymbol()
-            b = Nodes[kwargs['node2']]['atom_object'].GetSymbol()
-            if not a in ord:
-                a = len(ord)
-            else:
-                a = ord.index(a)
-            if not b in ord:
-                b = len(ord)
-            else:
-                b = ord.index(b)
-            if  a < b:
-                return -1
-            elif a > b:
-                return 1
-            else:
-                return 0
-        rules_dict = {'element_type': elm_type}
-        return rules_dict
-
+        self.ambiguity_rules = rule_set.rule_dict()
 
     def draw_graph(self, label_key = False):
         '''
@@ -119,7 +91,7 @@ class Molecule:
         '''
         Sort the list of nodes according to the rules provided.
         Applies all rules starting at the first dictionary entry.
-        Additionaly a distance based function will be applied as rule
+        Additionally, a distance based function will be applied as rule
         :param node: current node
         :param neighbors: current nodes neighbors as list
         :return: sorted list of nodes
@@ -128,14 +100,14 @@ class Molecule:
         # stable sort by given rules
         # stable sort by distance
         # return list
-        rules = list(self.amb_rules().values())
+        rules = list(self.ambiguity_rules.values())
         G = self.graph.nodes
 
         # sort neighbors by last rule first
         for rule in rules[::-1]:
             def rule_wrapper(x, y):
                 # wrapper to pars current_node argument  into cmp_to_key function
-                return rule(node1=x, node2=y, V=current_node)
+                return rule(self, node1=x, node2=y, V=current_node, center = (0,0,0))
             neighbors.sort(key = cmp_to_key(rule_wrapper), reverse=True)
 
         # ensure sorting by EC lable
