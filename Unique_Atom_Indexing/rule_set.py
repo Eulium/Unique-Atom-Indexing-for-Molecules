@@ -1,7 +1,7 @@
 '''
  Use as interface to create ambiguity rules as a comparison function.
  Right functions here and add 'string:func_name' to rule_dict
- Each rule will receive 3 key word arguments, node1, node 2 and the current_node.
+ Each rule will receive 4 key word arguments, node1, node 2, center and the current_node.
  Node1 and Node2 are the two atoms to be compared, while current_node is the morgan algo current node for enumeration.
  A comparison function must return -1 if node1 is to be order lower than node2, 1 if node2 < node1
  and 0 if they are of the same order.
@@ -19,8 +19,8 @@ def elm_type(self, **kwargs):
     Nodes = self.graph.nodes
     Edges = self.graph.edges
     ord = ['H', 'B', 'C', 'O', 'N', 'S', 'Cl']
-    a = Nodes[kwargs['node1']]['atom_object'].GetSymbol()
-    b = Nodes[kwargs['node2']]['atom_object'].GetSymbol()
+    a = Nodes[kwargs['node1']]['element']
+    b = Nodes[kwargs['node2']]['element']
     a = len(ord) if a not in ord else ord.index(a)
     b = len(ord) if b not in ord else ord.index(b)
     re = -1 if a < b else 1 if b < a else 0
@@ -41,8 +41,8 @@ def by_distance(self, **kwargs):
     # compares nodes based on the distance to a center
     Nodes = self.graph.nodes
     center = kwargs['center']
-    pos_a = self.original_molecule.GetConformer().GetAtomPosition(Nodes[kwargs['node1']]['original_atom_idx'])
-    pos_b = self.original_molecule.GetConformer().GetAtomPosition(Nodes[kwargs['node2']]['original_atom_idx'])
+    pos_a = Nodes[kwargs['node1']]['pos']
+    pos_b = Nodes[kwargs['node2']]['pos']
     def dist(a, b):
         d = sum([(x-y)**2 for x, y in zip(a,b)])**(0.5)
         return d
