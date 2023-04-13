@@ -47,6 +47,7 @@ Structure:
 
 
 TODO:
+0. get_mapping -> done
 1. kanten sortierung tauschen -> done
 2. symmetrie lösen, -> elmnt. vergergleichen
 3. heap, bzw minimal spanning tree variante

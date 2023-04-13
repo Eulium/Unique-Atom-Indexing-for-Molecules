@@ -266,7 +266,7 @@ class Molecule:
         self.update_mappin()
 
 
-    def subgraph_pairs_methods(self, subset, start):
+    def subgraph_pairs_methods(self, subset, c_start: (int, float)):
         '''
         Uses the distance between pairs of atoms to create a unique numbering.
         Algo:
@@ -308,7 +308,9 @@ class Molecule:
         labels.sort(key=lambda x: x[1])
 
         # list of nodes and their new label
-        re = [(node, rank+start) for rank, (node, label_list) in enumerate(labels)]
+        re = [(node, rank+c_start) for rank, (node, label_list) in enumerate(labels)]
+        a = rankdata(labels, method='min', axis=0)
+        print(a)
         return re
 
     def pairs_method(self):
@@ -319,15 +321,11 @@ class Molecule:
         :return: none
         '''
         start = 0
-        nodes = self.graph.nodes
-        for g in sorted(nx.connected_components(self.graph), key = len, reverse=True):
-            mapping_subset = self.subgraph_pairs_methods(g,C_start= start)
-            for atom_number, atom_mapping in zip(g, mapping_subset):
-                self.mapping[atom_number] = atom_mapping
-            start = start + len(g)
-
-
-
+        for subset in sorted(nx.connected_components(self.graph), key = len, reverse=True):
+            mapping_subset = self.subgraph_pairs_methods(subset, c_start= start)
+            for atom_number, atom_mapping in mapping_subset:
+                self.graph.nodes[atom_number]['unique_index'] = atom_mapping
+            start = start + len(subset)
 
 
 

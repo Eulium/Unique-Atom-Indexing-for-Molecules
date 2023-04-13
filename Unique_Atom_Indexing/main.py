@@ -37,13 +37,13 @@ def read_xyz(file_path):
                 xyz_cords.append((element, float(x), float(y), float(z)))
     return mol_name, xyz_cords
 
-'''
+
 mol_name, xyz = read_xyz('glucose.xyz')
 xyz = morgan.Molecule.from_XYZ(mol_name, xyz)
 xyz.draw_graph(label_key='original_atom_idx')
 #xyz.morgan()
 
-xyz.subsection_pairs_methods(range(13,24), 0)
+xyz.pairs_method()
 xyz.draw_graph(label_key='unique_index')
-'''
-main_sdf()
+
+#main_sdf()
