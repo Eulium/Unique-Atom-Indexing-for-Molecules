@@ -283,8 +283,7 @@ class Molecule:
         '''
         # get distance matrix and create a graph subset
         d_matrix = self.d_matrix
-        g = nx.Graph()
-        g.add_nodes_from(subset)
+        g = self.graph.subgraph(subset).copy()
         # get distances for graph subset only, sort by distance
         weights = [(x, y, d_matrix[x][y]) for x, y in itertools.combinations(subset, 2)]
         weights.sort(key = lambda x: x[2], reverse=False)
@@ -304,14 +303,24 @@ class Molecule:
             labels = [g.edges[x, y]['rank'] for x, y in node_a_edges]
             g.nodes[node_a]['rank_label'] = labels
         # sort nodes by rank labels, translate into new unique label
-        labels = [(x, g.nodes[x]['rank_label']) for x in g.nodes]
+        labels = [(node_number, g.nodes[node_number]['element'], g.nodes[node_number]['rank_label']) for node_number in g.nodes]
+        labels.sort(key=lambda x: x[2])
         labels.sort(key=lambda x: x[1])
-
+        print(labels)
         # list of nodes and their new label
-        re = [(node, rank+c_start) for rank, (node, label_list) in enumerate(labels)]
-        a = rankdata(labels, method='min', axis=0)
-        print(a)
-        return re
+        unique_labels = [(node_number, rank+c_start) for rank, (node_number, node_elment, label_list) in enumerate(labels)]
+        unique_labels_ranked = [x[1] for x in rankdata(unique_labels, method='min', axis=0)]
+        if len(set(unique_labels_ranked)) != len(unique_labels):
+            # sort neighbors by last rule first
+            for rule in self.ambiguity_rules[::-1]:
+                def rule_wrapper(x, y):
+                    # wrapper to pars current_node argument  into cmp_to_key function
+                    center = self.center_pos(subset)
+                    return rule(self, node1=x, node2=y, center=center)
+
+                unique_labels.sort(key=cmp_to_key(rule_wrapper), reverse=True)
+
+        return unique_labels
 
     def pairs_method(self):
         '''
@@ -326,6 +335,77 @@ class Molecule:
             for atom_number, atom_mapping in mapping_subset:
                 self.graph.nodes[atom_number]['unique_index'] = atom_mapping
             start = start + len(subset)
+        self.update_mappin()
+
+    def subgraph_spanning_tree_method(self, subset, c_start: (int, float)):
+        '''
+        Uses the prim's minimum spanning tree method to iteratively enumerate nodes.
+        The distance matrix is used to create a weighted, fully connected, graph.
+        Then prims iteratively added edges are used to label nodes.
+        With e1 = (u,v), e2 = (u',v'), e1 being the shortest e2 the second-shortest edge.
+        if v == u' then u is labeled 0 and v 1
+        if u == u' then v is labeled 0 and u 1
+        Returns the mapping of old atom idx to new enumeration.
+        :param subset:
+        :return:
+        '''
+        g = self.graph.subgraph(subset).copy()
+        g.remove_edges_from(g.edges)
+        d_matrix = self.d_matrix
+        weights = [(x, y, d_matrix[x][y]) for x, y in itertools.combinations(subset, 2)]
+        # add new edges with distance weights for subset
+        for x, y, dist in weights:
+            g.add_edges_from([(x, y, {'weight':dist})])
+        # use prim's algo to determine edges of minimum spanning tree,
+        mini_spanning_edges = list(nx.minimum_spanning_edges(g, algorithm='prim', weight = 'weight'))
+        # finde node which is NOT continued in next edge, label with 0
+        a, b, dist_1 = mini_spanning_edges[0]
+        c, d, dist_2 = mini_spanning_edges[1]
+        if a == c:
+            first = b
+            second = a
+        elif b == c:
+            first = a
+            second = b
+        # set first two node unique_lable
+        g.nodes[first]['unique_label'] = c_start
+        g.nodes[second]['unique_label'] = c_start+1
+        c_start += 2
+        # list to keep track of already seen nodes, in case of edge list not working as expected
+        seen = [first, second]
+        for number, (i, j, k) in enumerate(mini_spanning_edges[1:], start= c_start):
+            if i in seen and j not in seen:
+                # j should be a previously unseen node
+                g.nodes[j]['unique_label'] = number
+                seen.append(j)
+            if i not in seen and j in seen:
+                # if j is already seen node -> minimum spanning edges list ist not working as expected
+                raise Exception('Spanning tree enumeration method encountered an edge list error.')
+        # create mapping of node to label and return
+        re = [(node_number, g.nodes[node_number]['unique_label']) for node_number in g.nodes]
+        return re
+
+    def spanning_tree_method(self):
+        '''
+        Creates a unique enumeration for the molecule loaded in the Molecule object.
+        In the case that the graph is not connected (e.g. multiple molecules in xyz file) create numbering per molecule.
+        Mapping of original Atom idx is added to Molecule object attributes.
+        :return: none
+        '''
+        start = 0
+        for subset in sorted(nx.connected_components(self.graph), key = len, reverse=True):
+            mapping_subset = self.subgraph_spanning_tree_method(subset, c_start= start)
+            for atom_number, atom_mapping in mapping_subset:
+                self.graph.nodes[atom_number]['unique_index'] = atom_mapping
+            start = start + len(subset)
+        self.update_mappin()
+
+
+
+
+
+
+
 
 
 

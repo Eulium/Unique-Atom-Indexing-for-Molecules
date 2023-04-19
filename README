@@ -49,8 +49,8 @@ Structure:
 TODO:
 0. get_mapping -> done
 1. kanten sortierung tauschen -> done
-2. symmetrie lösen, -> elmnt. vergergleichen
-3. heap, bzw minimal spanning tree variante
+2. symmetrie lösen, -> elmnt. vergergleichen, done
+3. heap, bzw minimal spanning tree variante, done
 3. ähnlichkeitsmass für zwei belibige struckturen bauen.
 
 
