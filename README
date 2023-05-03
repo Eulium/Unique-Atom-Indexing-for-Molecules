@@ -45,3 +45,12 @@ Structure:
         - run_morgan(): label atoms in a canonical manner via morgan algo, write id mapping to mapping attribute
         - draw(): draw and show the graph with plt
 
+
+TODO:
+0. get_mapping -> done
+1. kanten sortierung tauschen -> done
+2. symmetrie lösen, -> elmnt. vergergleichen, done
+3. heap, bzw minimal spanning tree variante, done
+3. ähnlichkeitsmass für zwei belibige struckturen bauen.
+
+
