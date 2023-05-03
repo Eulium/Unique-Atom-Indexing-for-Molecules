@@ -34,7 +34,7 @@ class Molecule:
 
     @classmethod
     def from_XYZ(cls, mol_name: str, xyz_coords: list):
-        molecule =cls(mol_name, xyz_coords, 'xyz')
+        molecule = cls(mol_name, xyz_coords, 'xyz')
         return molecule
 
     def create_graph_from_mol(self):
@@ -53,8 +53,7 @@ class Molecule:
         edges = [(atom.GetIdx(), ng.GetIdx(),
                   {'bond_type': str(mol.GetBondBetweenAtoms(atom.GetIdx(), ng.GetIdx()).GetBondType())})
                  for atom in atoms
-                 for ng in atom.GetNeighbors()
-                 ]
+                 for ng in atom.GetNeighbors()]
         nodes_to_add = [(node['original_atom_idx'], node) for node in nodes]
         graph.add_nodes_from(nodes_to_add)
         graph.add_edges_from(edges)
@@ -244,12 +243,12 @@ class Molecule:
             V = V_queue.pop(0)
 
 
-    def morgan(self):
+    def morgan(self, reset= False):
         '''
         Performs Morgan algo for canonical enumeration on a graph
         An alternative set of rules to solve ambiguities can be passed as argument.
         In case ambiguities can not be solved, enumeration is solved via a distance approach.
-        :param rules: dictionary containing an alternative set of rules for ambiguity resolution.
+        :param reset: if true index starts at zero for each disconnected component.
         :return: none
         '''
         # run all morgan algo subsections
@@ -262,7 +261,8 @@ class Molecule:
         start = 0
         for g in sorted(nx.connected_components(self.graph), key = len, reverse=True):
             self.subgraph_morgan(g,C_start= start)
-            start = start + len(g)
+            if not reset:
+                start = start + len(g)
         self.update_mappin()
 
 
@@ -306,7 +306,6 @@ class Molecule:
         labels = [(node_number, g.nodes[node_number]['element'], g.nodes[node_number]['rank_label']) for node_number in g.nodes]
         labels.sort(key=lambda x: x[2])
         labels.sort(key=lambda x: x[1])
-        print(labels)
         # list of nodes and their new label
         unique_labels = [(node_number, rank+c_start) for rank, (node_number, node_elment, label_list) in enumerate(labels)]
         unique_labels_ranked = [x[1] for x in rankdata(unique_labels, method='min', axis=0)]
@@ -322,11 +321,12 @@ class Molecule:
 
         return unique_labels
 
-    def pairs_method(self):
+    def pairs_method(self, reset = False):
         '''
         Create unique atom enumeration for the Molecule object. Uses as pairwise distances method instead of Morgan algo.
         In the case of multiple disconnected components in the Molecule graph creates unique labels for all of them.
         Works for molecules generated from Mol and XYZ file types.
+        :param reset: bool, if true index starts at zero for each disconnected component.
         :return: none
         '''
         start = 0
@@ -334,10 +334,11 @@ class Molecule:
             mapping_subset = self.subgraph_pairs_methods(subset, c_start= start)
             for atom_number, atom_mapping in mapping_subset:
                 self.graph.nodes[atom_number]['unique_index'] = atom_mapping
-            start = start + len(subset)
+                if not reset:
+                    start = start + len(subset)
         self.update_mappin()
 
-    def subgraph_spanning_tree_method(self, subset, c_start: (int, float)):
+    def subgraph_spanning_tree_method(self, subset: list, c_start: (int, float)):
         '''
         Uses the prim's minimum spanning tree method to iteratively enumerate nodes.
         The distance matrix is used to create a weighted, fully connected, graph.
@@ -346,7 +347,8 @@ class Molecule:
         if v == u' then u is labeled 0 and v 1
         if u == u' then v is labeled 0 and u 1
         Returns the mapping of old atom idx to new enumeration.
-        :param subset:
+        :param c_start: indexing first count
+        :param subset: subset of nodes, representing a subgraph
         :return:
         '''
         g = self.graph.subgraph(subset).copy()
@@ -385,11 +387,13 @@ class Molecule:
         re = [(node_number, g.nodes[node_number]['unique_label']) for node_number in g.nodes]
         return re
 
-    def spanning_tree_method(self):
+    def spanning_tree_method(self, reset = False):
+
         '''
         Creates a unique enumeration for the molecule loaded in the Molecule object.
         In the case that the graph is not connected (e.g. multiple molecules in xyz file) create numbering per molecule.
         Mapping of original Atom idx is added to Molecule object attributes.
+        :param reset: bool, if true index starts at zero for each disconnected component.
         :return: none
         '''
         start = 0
@@ -397,7 +401,8 @@ class Molecule:
             mapping_subset = self.subgraph_spanning_tree_method(subset, c_start= start)
             for atom_number, atom_mapping in mapping_subset:
                 self.graph.nodes[atom_number]['unique_index'] = atom_mapping
-            start = start + len(subset)
+            if not reset:
+                start = start + len(subset)
         self.update_mappin()
 
 
