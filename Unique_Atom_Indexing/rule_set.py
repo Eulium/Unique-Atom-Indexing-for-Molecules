@@ -1,7 +1,7 @@
 '''
  Use as interface to create ambiguity rules as a comparison function.
- Right functions here and add 'string:func_name' to rule_dict
- Each rule will receive 4 key word arguments, node1, node 2, center and the current_node.
+ Write functions here and add <string>:<func_call> to rule_dict
+ Each rule will receive 4 key word arguments, node1, node 2, centre and the current_node.
  Node1 and Node2 are the two atoms to be compared, while current_node is the morgan algo current node for enumeration.
  A comparison function must return -1 if node1 is to be order lower than node2, 1 if node2 < node1
  and 0 if they are of the same order.
@@ -14,7 +14,7 @@ def rule_dict():
     return rules
 
 def elm_type(self, **kwargs):
-    # elemet type wise comparison
+    # Element wise comparison of nodes.
     # node1 = x, node2 = y, V = current_node
     Nodes = self.graph.nodes
     Edges = self.graph.edges
@@ -38,9 +38,9 @@ def bond_type(self, **kwargs):
     return re
 
 def by_distance(self, **kwargs):
-    # compares nodes based on the distance to a center
+    # compares nodes based on the distance to a centre
     Nodes = self.graph.nodes
-    center = kwargs['center']
+    center = kwargs['centre']
     pos_a = Nodes[kwargs['node1']]['pos']
     pos_b = Nodes[kwargs['node2']]['pos']
     def dist(a, b):

@@ -15,8 +15,8 @@ class Molecule:
         :param molecule_object: a RDkit molecule object
         :param mol_name: name of the molecule
         '''
-        self.original_molecule = molecule_object
         self.name = mol_name
+        self.original_molecule = molecule_object
         self.file_type = file_type
         self.ambiguity_rules = rule_set.rule_dict()
         self.graph = nx.Graph()
@@ -60,18 +60,24 @@ class Molecule:
         return graph
 
     def create_graph_from_xyz(self):
-
+        '''
+        Create an undirected nx graph from a xyz file
+        :return: none
+        '''
         g = nx.Graph()
         mol = self.original_molecule
+        # first element in mol list is element
         coords = [(xyz[1:]) for xyz in mol]
         dist_matrix = cdist(np.array(coords), np.array(coords))
         self.d_matrix = dist_matrix
+        # list of graph nodes
         nodes = [{'original_atom_idx': num,
                   'element': atom,
                   'pos': (x,y,z),
                   'atom_object': (atom, x, y, z)}
                  for num,(atom,x,y,z) in enumerate(mol)]
         edges = []
+        # create edges for all atom pairs with distance <= 2
         for x in range(0, len(mol)):
             for y in range(x+1, len(mol)):
                 if dist_matrix[x][y] <= 2:
@@ -84,7 +90,7 @@ class Molecule:
         '''
         Returns the mapping of the original atom enumeration to unique labeling.
         A[i] = unique label of original atom i
-        :return: [int, ...] list of int,
+        :return: [int, ...] list of int
         '''
         if self.mapping[0] == None:
             g = self.graph
@@ -130,7 +136,7 @@ class Molecule:
     def relax(self, max_cycles =50000):
         '''
         Does the Morgan relaxation step for a graph instance.
-        :param max_cycles: max amount of relaxation cylces for latest termination
+        :param max_cycles: max amount of relaxation cycles for latest termination
         :return: none
         '''
         g = self.graph
@@ -165,13 +171,14 @@ class Molecule:
             del g.nodes[node]['EC_l']
             del g.nodes[node]['EC_c']
 
-    def resolve_ambiguities(self, neighbors, current_node, center) -> list :
+    def resolve_ambiguities(self, neighbours, current_node, centre) -> list :
         '''
         Sort the list of nodes according to the rules provided.
         Applies all rules starting at the first dictionary entry.
         Additionally, a distance based function will be applied as rule
-        :param node: current node
-        :param neighbors: current nodes neighbors as list
+        :param current_node: current node being viewed
+        :param neighbours: current nodes neighbors as list
+        :param centre: center position given as list of coords
         :return: sorted list of nodes
         '''
         # generate attributes for each node
@@ -185,12 +192,12 @@ class Molecule:
         for rule in rules[::-1]:
             def rule_wrapper(x, y):
                 # wrapper to pars current_node argument  into cmp_to_key function
-                return rule(self, node1=x, node2=y, V=current_node, center = center)
-            neighbors.sort(key = cmp_to_key(rule_wrapper), reverse=True)
+                return rule(self, node1=x, node2=y, V=current_node, centre = centre)
+            neighbours.sort(key = cmp_to_key(rule_wrapper), reverse=True)
 
         # ensure sorting by EC label
-        neighbors.sort(key=lambda x: G[x]['EC'], reverse=True)
-        return neighbors
+        neighbours.sort(key=lambda x: G[x]['EC'], reverse=True)
+        return neighbours
 
 
     def subgraph_morgan(self, subset, C_start=0):
@@ -279,6 +286,7 @@ class Molecule:
             6. sort node by labels,
             7. assign rank as new label
         :param subset: subset of nodes to apply algo to, node i is also atom i in xyz file
+        :param c_start: int, start of enumeration.
         :return : list, [(node, unique_label),...], return a list of tuples with node numer and unique label number.
         '''
         # get distance matrix and create a graph subset

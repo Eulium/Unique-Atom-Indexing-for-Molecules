@@ -1,7 +1,7 @@
 from rdkit import Chem
-import morgan
+import indexing_functionality
 
-def mapping_sdf(file_path: str, restart_index: (True, False) = True, method: str = 'morgan') -> dict:
+def mapping_sdf(file_path: str, restart_index: (True, False) = False, method: str = 'morgan') -> dict:
     '''
     Atom index mapping for all molecules in sdf style files. Returns the mapping of the molecule as dictionary of
     lists. A list is keyed to the molecule name with atom i being mapped to entry A[i].
@@ -20,9 +20,11 @@ def mapping_sdf(file_path: str, restart_index: (True, False) = True, method: str
             if mol is None: continue
             # create object and use enumeration method
             name = mol.GetProp('_Name')
-            molecule_object = morgan.Molecule.from_Mol(name,mol)
+            molecule_object =  indexing_functionality.Molecule.from_Mol(name,mol)
             if method == 'morgan':
                 molecule_object.morgan(reset=restart_index)
+                molecule_object.draw_graph('unique_index')
+                break
             elif method == 'pairs':
                 molecule_object.pairs_method(reset=restart_index)
             elif method == 'spanning_tree':
@@ -56,7 +58,7 @@ def mapping_xyz(file_path: str, restart_index: (True, False) = True, method: str
                 element, x, y, z, = line.split()
                 xyz_cords.append((element, float(x), float(y), float(z)))
         # create molecule object and run enumeration
-        molecule_object = morgan.Molecule.from_XYZ(mol_name, xyz_cords)
+        molecule_object = indexing_functionality.Molecule.from_XYZ(mol_name, xyz_cords)
         if method == 'morgan':
             molecule_object.morgan(reset=restart_index)
         elif method == 'pairs':
@@ -70,4 +72,12 @@ def mapping_xyz(file_path: str, restart_index: (True, False) = True, method: str
 
     ####teststts
 
-print(mapping_xyz('glucose.xyz', method='pairs'))
+# Bsp: Glucose
+mapping_glucose = mapping_xyz('glucose.xyz', method='pairs')
+print(f'Mapping glucose atoms: {mapping_glucose}')
+
+# Bsp Brom
+mapping_brom = mapping_sdf('../brom_bb_360_mp2.sdf', method='morgan')
+keys = list(mapping_brom.keys())[0:5]
+print(f'Mapping brom atoms, conformations 1-5: {[mapping_brom[x] for x in keys]}')
+
